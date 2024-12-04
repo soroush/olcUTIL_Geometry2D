@@ -39,6 +39,11 @@ foreach( testSourceFile ${APP_SOURCES} )
     get_filename_component( testName ${testSourceFile} NAME_WE )
     add_executable( ${testName} ${testSourceFile} )
 
+    set_target_properties( ${testName} PROPERTIES
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED ON
+    )
+
     # OpenGL
     if (NOT EMSCRIPTEN)
         set(OpenGL_GL_PREFERENCE LEGACY)

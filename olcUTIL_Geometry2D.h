@@ -212,23 +212,37 @@ namespace olc
 		concept scalar = arithmetic<scalar_t>;
 	}
 
+	namespace promise
+	{
+		// Concept to check if a type is arithmetic
+		template <typename scalar_t>
+		concept arithmetic = std::is_arithmetic_v<scalar_t>;
+
+		template <typename scalar_t>
+		concept scalar = arithmetic<scalar_t>;
+	}
+
 	/*
 		A complete 2D geometric vector structure, with a variety
 		of useful utility functions and operator overloads
 	*/
+	template<promise::scalar scalar>
 	template<promise::scalar scalar>
 	struct v_2d
 	{
 		using scalar_t = scalar;
 		// x-axis component
 		scalar x = 0;
+		scalar x = 0;
 		// y-axis component
+		scalar y = 0;
 		scalar y = 0;
 
 		// Default constructor
 		inline constexpr v_2d() = default;
 
 		// Specific constructor
+		inline constexpr v_2d(scalar _x, scalar _y) : x(_x), y(_y)
 		inline constexpr v_2d(scalar _x, scalar _y) : x(_x), y(_y)
 		{}
 
@@ -252,6 +266,7 @@ namespace olc
 		}
 
 		// Returns magnitude squared of vector (useful for fast comparisons)
+		inline constexpr scalar mag2() const
 		inline constexpr scalar mag2() const
 		{
 			return x * x + y * y;
@@ -328,6 +343,7 @@ namespace olc
 		inline constexpr v_2d lerp(const v_2d& v1, const double t) const
 		{
 			return (*this) * (scalar(1.0 - t)) + (v1 * scalar(t));
+			return (*this) * (scalar(1.0 - t)) + (v1 * scalar(t));
 		}
 
 		// Compare if this vector is numerically equal to another
@@ -378,7 +394,25 @@ namespace olc
 		concept primitive = vector<t> || scalar<t> ;
 	}
 
+	namespace promise
+	{
+		template <typename>
+		struct is_vector_type_t : std::false_type {};
+
+		// Specialization for v_2d
+		template <scalar scalar>
+		struct is_vector_type_t<v_2d<scalar>> : std::true_type {};
+
+		template <typename scalar>
+		concept vector = is_vector_type_t<scalar>::value;
+
+		template <typename t>
+		concept primitive = vector<t> || scalar<t> ;
+	}
+
 	// Multiplication operator overloads between vectors and scalars, and vectors and vectors
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator * (const scalar& lhs, const vector& rhs)
 	template<promise::scalar scalar, promise::vector vector>
 	inline constexpr auto operator * (const scalar& lhs, const vector& rhs)
 	{
@@ -387,16 +421,23 @@ namespace olc
 
 	template<promise::scalar scalar, promise::vector vector>
 	inline constexpr auto operator * (const vector& lhs, const scalar& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator * (const vector& lhs, const scalar& rhs)
 	{
+		return rhs * lhs;
 		return rhs * lhs;
 	}
 
+	template<promise::vector vector1, promise::vector vector2>
+	inline constexpr auto operator * (const vector1& lhs, const vector2& rhs)
 	template<promise::vector vector1, promise::vector vector2>
 	inline constexpr auto operator * (const vector1& lhs, const vector2& rhs)
 	{
 		return v_2d(lhs.x * rhs.x, lhs.y * rhs.y);
 	}
 
+	template<promise::primitive p, promise::vector vector>
+	inline constexpr auto operator *= (vector& lhs, const p& rhs)
 	template<promise::primitive p, promise::vector vector>
 	inline constexpr auto operator *= (vector& lhs, const p& rhs)
 	{
@@ -407,10 +448,14 @@ namespace olc
 	// Division operator overloads between vectors and scalars, and vectors and vectors
 	template<promise::scalar scalar, promise::vector vector>
 	inline constexpr auto operator / (const scalar& lhs, const vector& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator / (const scalar& lhs, const vector& rhs)
 	{
 		return v_2d(lhs / rhs.x, lhs / rhs.y);
 	}
 
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator / (const vector& lhs, const scalar& rhs)
 	template<promise::scalar scalar, promise::vector vector>
 	inline constexpr auto operator / (const vector& lhs, const scalar& rhs)
 	{
@@ -419,10 +464,14 @@ namespace olc
 
 	template<promise::vector vector1, promise::vector vector2>
 	inline constexpr auto operator / (const vector1& lhs, const vector2& rhs)
+	template<promise::vector vector1, promise::vector vector2>
+	inline constexpr auto operator / (const vector1& lhs, const vector2& rhs)
 	{
 		return v_2d(lhs.x / rhs.x, lhs.y / rhs.y);
 	}
 
+	template<promise::primitive primitive, promise::vector vector>
+	inline constexpr auto operator /= (vector& lhs, const primitive& rhs)
 	template<promise::primitive primitive, promise::vector vector>
 	inline constexpr auto operator /= (vector& lhs, const primitive& rhs)
 	{
@@ -433,11 +482,16 @@ namespace olc
 	// Unary Addition operator (pointless but i like unicorns)
 	template<promise::vector vector>
 	inline constexpr auto operator + (const vector& lhs)
+	// Unary Addition operator (pointless but i like unicorns)
+	template<promise::vector vector>
+	inline constexpr auto operator + (const vector& lhs)
 	{
 		return v_2d(+lhs.x, +lhs.y);
 	}
 
 	// Addition operator overloads between vectors and scalars, and vectors and vectors
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator + (const scalar& lhs, const vector& rhs)
 	template<promise::scalar scalar, promise::vector vector>
 	inline constexpr auto operator + (const scalar& lhs, const vector& rhs)
 	{
@@ -446,16 +500,23 @@ namespace olc
 
 	template<promise::scalar scalar, promise::vector vector>
 	inline constexpr auto operator + (const vector& lhs, const scalar& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator + (const vector& lhs, const scalar& rhs)
 	{
+		return rhs + lhs;
 		return rhs + lhs;
 	}
 
+	template<promise::vector vector_l, promise::vector vector_r>
+	inline constexpr auto operator + (const vector_l& lhs, const vector_r& rhs)
 	template<promise::vector vector_l, promise::vector vector_r>
 	inline constexpr auto operator + (const vector_l& lhs, const vector_r& rhs)
 	{
 		return v_2d(lhs.x + rhs.x, lhs.y + rhs.y);
 	}
 
+	template<promise::primitive p, promise::vector vector>
+	inline constexpr auto operator += (vector& lhs, const p& rhs)
 	template<promise::primitive p, promise::vector vector>
 	inline constexpr auto operator += (vector& lhs, const p& rhs)
 	{

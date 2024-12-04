@@ -205,21 +205,21 @@ namespace olc
 		A complete 2D geometric vector structure, with a variety
 		of useful utility functions and operator overloads
 	*/
-	template<class T>
+	template<class scalar_t>
 	struct v_2d
 	{
-		static_assert(std::is_arithmetic<T>::value, "olc::v_2d<type> must be numeric");
+		static_assert(std::is_arithmetic<scalar_t>::value, "olc::v_2d<type> must be numeric");
 
 		// x-axis component
-		T x = 0;
+		scalar_t x = 0;
 		// y-axis component
-		T y = 0;
+		scalar_t y = 0;
 
 		// Default constructor
 		inline constexpr v_2d() = default;
 
 		// Specific constructor
-		inline constexpr v_2d(T _x, T _y) : x(_x), y(_y)
+		inline constexpr v_2d(scalar_t _x, scalar_t _y) : x(_x), y(_y)
 		{}
 
 		// Copy constructor
@@ -242,7 +242,7 @@ namespace olc
 		}
 
 		// Returns magnitude squared of vector (useful for fast comparisons)
-		inline constexpr T mag2() const
+		inline constexpr scalar_t mag2() const
 		{
 			return x * x + y * y;
 		}
@@ -317,7 +317,7 @@ namespace olc
 		// Linearly interpolate between this vector, and another vector, given normalised parameter 't'
 		inline constexpr v_2d lerp(const v_2d& v1, const double t) const
 		{
-			return (*this) * (T(1.0 - t)) + (v1 * T(t));
+			return (*this) * (scalar_t(1.0 - t)) + (v1 * scalar_t(t));
 		}
 
 		// Compare if this vector is numerically equal to another

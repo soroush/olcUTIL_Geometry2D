@@ -191,6 +191,7 @@
 #include <optional>
 #include <cassert>
 #include <array>
+#include <concepts>
 
 
 #ifdef PGE_VER
@@ -201,25 +202,33 @@
 #if !defined(OLC_VECTOR2D_DEFINED)
 namespace olc
 {
+	namespace promise
+	{
+		// Concept to check if a type is arithmetic
+		template <typename scalar_t>
+		concept arithmetic = std::is_arithmetic_v<scalar_t>;
+
+		template <typename scalar_t>
+		concept scalar = arithmetic<scalar_t>;
+	}
+
 	/*
 		A complete 2D geometric vector structure, with a variety
 		of useful utility functions and operator overloads
 	*/
-	template<class scalar_t>
+	template<promise::scalar scalar>
 	struct v_2d
 	{
-		static_assert(std::is_arithmetic<scalar_t>::value, "olc::v_2d<type> must be numeric");
-
 		// x-axis component
-		scalar_t x = 0;
+		scalar x = 0;
 		// y-axis component
-		scalar_t y = 0;
+		scalar y = 0;
 
 		// Default constructor
 		inline constexpr v_2d() = default;
 
 		// Specific constructor
-		inline constexpr v_2d(scalar_t _x, scalar_t _y) : x(_x), y(_y)
+		inline constexpr v_2d(scalar _x, scalar _y) : x(_x), y(_y)
 		{}
 
 		// Copy constructor
@@ -242,7 +251,7 @@ namespace olc
 		}
 
 		// Returns magnitude squared of vector (useful for fast comparisons)
-		inline constexpr scalar_t mag2() const
+		inline constexpr scalar mag2() const
 		{
 			return x * x + y * y;
 		}
@@ -317,7 +326,7 @@ namespace olc
 		// Linearly interpolate between this vector, and another vector, given normalised parameter 't'
 		inline constexpr v_2d lerp(const v_2d& v1, const double t) const
 		{
-			return (*this) * (scalar_t(1.0 - t)) + (v1 * scalar_t(t));
+			return (*this) * (scalar(1.0 - t)) + (v1 * scalar(t));
 		}
 
 		// Compare if this vector is numerically equal to another
@@ -352,147 +361,152 @@ namespace olc
 		}
 	};
 
+	namespace promise
+	{
+		template <typename>
+		struct is_vector_type_t : std::false_type {};
+
+		// Specialization for v_2d
+		template <scalar scalar>
+		struct is_vector_type_t<v_2d<scalar>> : std::true_type {};
+
+		template <typename scalar>
+		concept vector = is_vector_type_t<scalar>::value;
+
+		template <typename t>
+		concept primitive = vector<t> || scalar<t> ;
+	}
+
 	// Multiplication operator overloads between vectors and scalars, and vectors and vectors
-	template<class TL, class TR>
-	inline constexpr auto operator * (const TL& lhs, const v_2d<TR>& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator * (const scalar& lhs, const vector& rhs)
 	{
 		return v_2d(lhs * rhs.x, lhs * rhs.y);
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator * (const v_2d<TL>& lhs, const TR& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator * (const vector& lhs, const scalar& rhs)
 	{
-		return v_2d(lhs.x * rhs, lhs.y * rhs);
+		return rhs * lhs;
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator * (const v_2d<TL>& lhs, const v_2d<TR>& rhs)
+	template<promise::vector vector1, promise::vector vector2>
+	inline constexpr auto operator * (const vector1& lhs, const vector2& rhs)
 	{
 		return v_2d(lhs.x * rhs.x, lhs.y * rhs.y);
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator *= (v_2d<TL>& lhs, const TR& rhs)
+	template<promise::primitive p, promise::vector vector>
+	inline constexpr auto operator *= (vector& lhs, const p& rhs)
 	{
 		lhs = lhs * rhs;
 		return lhs;
 	}
 
 	// Division operator overloads between vectors and scalars, and vectors and vectors
-	template<class TL, class TR>
-	inline constexpr auto operator / (const TL& lhs, const v_2d<TR>& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator / (const scalar& lhs, const vector& rhs)
 	{
 		return v_2d(lhs / rhs.x, lhs / rhs.y);
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator / (const v_2d<TL>& lhs, const TR& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator / (const vector& lhs, const scalar& rhs)
 	{
 		return v_2d(lhs.x / rhs, lhs.y / rhs);
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator / (const v_2d<TL>& lhs, const v_2d<TR>& rhs)
+	template<promise::vector vector1, promise::vector vector2>
+	inline constexpr auto operator / (const vector1& lhs, const vector2& rhs)
 	{
 		return v_2d(lhs.x / rhs.x, lhs.y / rhs.y);
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator /= (v_2d<TL>& lhs, const TR& rhs)
+	template<promise::primitive primitive, promise::vector vector>
+	inline constexpr auto operator /= (vector& lhs, const primitive& rhs)
 	{
 		lhs = lhs / rhs;
 		return lhs;
 	}
 
-	// Unary Addition operator (pointless but i like the platinum trophies)
-	template<class T>
-	inline constexpr auto operator + (const v_2d<T>& lhs)
+	// Unary Addition operator (pointless but i like unicorns)
+	template<promise::vector vector>
+	inline constexpr auto operator + (const vector& lhs)
 	{
 		return v_2d(+lhs.x, +lhs.y);
 	}
 
 	// Addition operator overloads between vectors and scalars, and vectors and vectors
-	template<class TL, class TR>
-	inline constexpr auto operator + (const TL& lhs, const v_2d<TR>& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator + (const scalar& lhs, const vector& rhs)
 	{
 		return v_2d(lhs + rhs.x, lhs + rhs.y);
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator + (const v_2d<TL>& lhs, const TR& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator + (const vector& lhs, const scalar& rhs)
 	{
-		return v_2d(lhs.x + rhs, lhs.y + rhs);
+		return rhs + lhs;
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator + (const v_2d<TL>& lhs, const v_2d<TR>& rhs)
+	template<promise::vector vector_l, promise::vector vector_r>
+	inline constexpr auto operator + (const vector_l& lhs, const vector_r& rhs)
 	{
 		return v_2d(lhs.x + rhs.x, lhs.y + rhs.y);
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator += (v_2d<TL>& lhs, const TR& rhs)
-	{
-		lhs = lhs + rhs;
-		return lhs;
-	}
-
-	template<class TL, class TR>
-	inline constexpr auto operator += (v_2d<TL>& lhs, const v_2d<TR>& rhs)
+	template<promise::primitive p, promise::vector vector>
+	inline constexpr auto operator += (vector& lhs, const p& rhs)
 	{
 		lhs = lhs + rhs;
 		return lhs;
 	}
 
 	// Unary negation operator overoad for inverting a vector
-	template<class T>
-	inline constexpr auto operator - (const v_2d<T>& lhs)
+	template<promise::vector vector>
+	inline constexpr auto operator - (const vector& lhs)
 	{
 		return v_2d(-lhs.x, -lhs.y);
 	}
 
 	// Subtraction operator overloads between vectors and scalars, and vectors and vectors
-	template<class TL, class TR>
-	inline constexpr auto operator - (const TL& lhs, const v_2d<TR>& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator - (const scalar& lhs, const vector& rhs)
 	{
 		return v_2d(lhs - rhs.x, lhs - rhs.y);
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator - (const v_2d<TL>& lhs, const TR& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator - (const vector& lhs, const scalar& rhs)
 	{
-		return v_2d(lhs.x - rhs, lhs.y - rhs);
+		return -( rhs - lhs);
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator - (const v_2d<TL>& lhs, const v_2d<TR>& rhs)
+	template<promise::vector vector_l, promise::vector vector_r>
+	inline constexpr auto operator - (const vector_l& lhs, const vector_r& rhs)
 	{
 		return v_2d(lhs.x - rhs.x, lhs.y - rhs.y);
 	}
 
-	template<class TL, class TR>
-	inline constexpr auto operator -= (v_2d<TL>& lhs, const TR& rhs)
+	template<promise::scalar scalar, promise::vector vector>
+	inline constexpr auto operator -= (vector& lhs, const scalar& rhs)
 	{
 		lhs = lhs - rhs;
 		return lhs;
 	}
 
 	// Greater/Less-Than Operator overloads - mathematically useless, but handy for "sorted" container storage
-	template<class TL, class TR>
-	inline constexpr bool operator < (const v_2d<TL>& lhs, const v_2d<TR>& rhs)
+	template<promise::vector vector_l, promise::vector vector_r>
+	inline constexpr auto operator <=>(const vector_l& lhs, const vector_r& rhs)
 	{
-		return (lhs.y < rhs.y) || (lhs.y == rhs.y && lhs.x < rhs.x);
-	}
-
-	template<class TL, class TR>
-	inline constexpr bool operator > (const v_2d<TL>& lhs, const v_2d<TR>& rhs)
-	{
-		return (lhs.y > rhs.y) || (lhs.y == rhs.y && lhs.x > rhs.x);
+		if (auto cmp = lhs.y <=> rhs.y; cmp != 0)
+			return cmp;
+		return lhs.x <=> rhs.x;
 	}
 
 	// Allow olc::v_2d to play nicely with std::cout
-	template<class T>
-	inline constexpr std::ostream& operator << (std::ostream& os, const v_2d<T>& rhs)
+	template<promise::vector vector>
+	inline constexpr std::ostream& operator << (std::ostream& os, const vector& rhs)
 	{
 		os << rhs.str();
 		return os;

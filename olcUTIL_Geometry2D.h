@@ -219,6 +219,7 @@ namespace olc
 	template<promise::scalar scalar>
 	struct v_2d
 	{
+		using scalar_t = scalar;
 		// x-axis component
 		scalar x = 0;
 		// y-axis component
@@ -533,9 +534,9 @@ namespace olc::utils::geom2d
 
 	namespace internal
 	{
-		template<typename T>
-		inline std::vector<olc::v_2d<T>> filter_duplicate_points(const std::vector<olc::v_2d<T>>& points) {
-			std::vector<olc::v_2d<T>> filtered_points;
+		template<promise::vector vector>
+		inline std::vector<vector> filter_duplicate_points(const std::vector<vector>& points) {
+			std::vector<vector> filtered_points;
 
 			for (const auto& point : points)
 			{
@@ -561,35 +562,35 @@ namespace olc::utils::geom2d
 	};
 
 	//https://stackoverflow.com/questions/1903954/is-there-a-standard-sign-function-signum-sgn-in-c-c
-	template <typename T>
-	constexpr int sgn(T val) { return (T(0) < val) - (val < T(0)); }
+	template <promise::scalar scalar>
+	constexpr int sgn(scalar val) { return (scalar{0} < val) - (val < scalar{0}); }
 
 	// Defines a line segment
-	template<typename T>
+	template<olc::promise::scalar scalar_t, olc::promise::vector vector_t = olc::v_2d<scalar_t>>
 	struct line
 	{
-		olc::v_2d<T> start;
-		olc::v_2d<T> end;
+		vector_t start;
+		vector_t end;
 
-		inline line(const olc::v_2d<T>& s = { T(0), T(0) },
-			const olc::v_2d<T>& e = { T(0), T(0) })
+		inline line(const vector_t& s = { scalar_t(0), scalar_t(0) },
+			const vector_t& e = { scalar_t(0), scalar_t(0) })
 			: start(s), end(e)
 		{ }
 
 		// Get vector pointing from start to end
-		inline constexpr olc::v_2d<T> vector() const
+		inline constexpr vector_t vector() const
 		{
 			return (end - start);
 		}
 
 		// Get length of line
-		inline constexpr T length()
+		inline constexpr scalar_t length()
 		{
 			return vector().mag();
 		}
 
 		// Get length of line^2
-		inline constexpr T length2()
+		inline constexpr vector_t::scalar_t length2()
 		{
 			return vector().mag2();
 		}
@@ -597,19 +598,19 @@ namespace olc::utils::geom2d
 		
 
 		// Given a real distance, get point along line
-		inline constexpr olc::v_2d<T> rpoint(const T& distance) const
+		inline constexpr vector_t rpoint(const vector_t::scalar_t& distance) const
 		{
 			return start + vector().norm() * distance;
 		}
 
 		// Given a unit distance, get point along line
-		inline constexpr olc::v_2d<T> upoint(const T& distance) const
+		inline constexpr vector_t upoint(const vector_t::scalar_t& distance) const
 		{
 			return start + vector() * distance;
 		}
 
 		// Return which side of the line does a point lie
-		inline constexpr int32_t side(const olc::v_2d<T>& point) const
+		inline constexpr int32_t side(const vector_t& point) const
 		{
 			double d = vector().cross(point - start);
 			if (d < 0)
@@ -642,60 +643,64 @@ namespace olc::utils::geom2d
 		}
 	};
 
-	template<typename T>
+	template<promise::scalar scalar>
 	struct ray
 	{
-		olc::v_2d<T> origin;
-		olc::v_2d<T> direction;
+		using vector = olc::v_2d<scalar>;
 
-		inline ray(const olc::v_2d<T>& o = { T(0), T(0) },
-			const olc::v_2d<T>& d = { T(0), T(0) })
+		vector origin;
+		vector direction;
+
+		inline ray(const vector& o = { scalar(0), scalar(0) },
+			const vector& d = { scalar(0), scalar(0) })
 			: origin(o), direction(d)
 		{ }
 	};
 
-	template<typename T>
+	template<promise::scalar scalar>
 	struct rect
 	{
-		olc::v_2d<T> pos;
-		olc::v_2d<T> size;
+		using vector = olc::v_2d<scalar>;
 
-		inline rect(const olc::v_2d<T>& p = { T(0), T(0) },
-			const olc::v_2d<T>& s = { T(1), T(1) })
+		vector pos;
+		vector size;
+
+		inline rect(const vector& p = { scalar(0), scalar(0) },
+			const vector& s = { scalar(1), scalar(1) })
 			: pos(p), size(s)
 		{ }
 
-		inline olc::v_2d<T> middle() const
+		inline vector middle() const
 		{
 			return pos + (size * double(0.5));
 		}
 
 		// Get line segment from top side of rectangle
-		inline line<T> top() const
+		inline line<scalar> top() const
 		{
 			return { pos, {pos.x + size.x, pos.y } };
 		}
 
 		// Get line segment from bottom side of rectangle
-		inline line<T> bottom() const
+		inline line<scalar> bottom() const
 		{
 			return { {pos.x, pos.y + size.y}, pos + size };
 		}
 
 		// Get line segment from left side of rectangle
-		inline line<T> left() const
+		inline line<scalar> left() const
 		{
 			return { pos, {pos.x, pos.y + size.y} };
 		}
 
 		// Get line segment from right side of rectangle
-		inline line<T> right() const
+		inline line<scalar> right() const
 		{
 			return { {pos.x + size.x, pos.y }, pos + size };
 		}
 
 		// Get a line from an indexed side, starting top, going clockwise
-		inline line<T> side(const size_t i) const
+		inline line<scalar> side(const size_t i) const
 		{
 			if ((i & 0b11) == 0) return top();
 			if ((i & 0b11) == 1) return right();
@@ -705,15 +710,15 @@ namespace olc::utils::geom2d
 		}
 
 		// Get area of rectangle
-		inline constexpr T area() const
+		inline constexpr scalar area() const
 		{
 			return size.x * size.y;
 		}
 
 		// Get perimeter of rectangle
-		inline constexpr T perimeter() const
+		inline constexpr scalar perimeter() const
 		{
-			return T(2) * (size.x + size.y);
+			return scalar(2) * (size.x + size.y);
 		}
 
 		// Returns side count: 4
@@ -723,30 +728,32 @@ namespace olc::utils::geom2d
 	};
 
 
-	template<typename T>
+	template<promise::scalar scalar>
 	struct circle
 	{
-		olc::v_2d<T> pos;
-		T radius = T(0);
+		using vector = olc::v_2d<scalar>;
 
-		inline circle(const olc::v_2d<T>& p = { T(0), T(0) }, const T r = T(0))
+		vector pos;
+		scalar radius = scalar(0);
+
+		inline circle(const vector& p = { scalar(0), scalar(0) }, const scalar r = scalar(0))
 			: pos(p), radius(r)
 		{ }
 
 		// Get area of circle
-		inline constexpr T area() const
+		inline constexpr scalar area() const
 		{
-			return T(pi) * radius * radius;
+			return scalar(pi) * radius * radius;
 		}
 
 		// Get circumference of circle
-		inline constexpr T perimeter() const
+		inline constexpr scalar perimeter() const
 		{
-			return T(2.0 * pi) * radius;
+			return scalar(2.0 * pi) * radius;
 		}
 
 		// Get circumference of circle
-		inline constexpr T circumference() const
+		inline constexpr scalar circumference() const
 		{
 			return perimeter();
 		}
@@ -768,7 +775,7 @@ namespace olc::utils::geom2d
 		// Get a line from an indexed side, starting top, going clockwise
 		inline line<T> side(const size_t i) const
 		{
-			return line(pos[i % 3], pos[(i + 1) % 3]);
+			return line<T>(pos[i % 3], pos[(i + 1) % 3]);
 		}
 
 		// Get area of triangle

@@ -86,11 +86,11 @@ public:
 
 	// Create desired shapes using a sequence of points
 	static auto make_internal(const Point& p)    { return p.points[0]; }
-	static auto make_internal(const Line& p)     { return line<float>{ p.points[0], p.points[1] }; }
-	static auto make_internal(const Rect& p)     { return rect<float>{ p.points[0], (p.points[1] - p.points[0]) }; }
-	static auto make_internal(const Circle& p)   { return circle<float>{ p.points[0], (p.points[1]-p.points[0]).mag() }; }
-	static auto make_internal(const Triangle& p) { return triangle<float>{ p.points[0], p.points[1], p.points[2] }; }
-	static auto make_internal(const Ray& p)      { return ray<float>{ p.points[0], (p.points[1]-p.points[0]).norm() }; }
+	static auto make_internal(const Line& p)     { return line{ p.points[0], p.points[1] }; }
+	static auto make_internal(const Rect& p)     { return rect{ p.points[0], (p.points[1] - p.points[0]) }; }
+	static auto make_internal(const Circle& p)   { return circle{ p.points[0], (p.points[1]-p.points[0]).mag() }; }
+	static auto make_internal(const Triangle& p) { return triangle{ p.points[0], p.points[1], p.points[2] }; }
+	static auto make_internal(const Ray& p)      { return ray{ p.points[0], (p.points[1]-p.points[0]).norm() }; }
 
 	// The clever bit (and a bit new to me - jx9)
 	using ShapeWrap = std::variant<Point, Line, Rect, Circle, Triangle, Ray>;
@@ -154,10 +154,10 @@ public:
 		return std::visit(dispatch, s1, s2);
 	}
 
-	std::optional<ray<float>> CheckReflect(const olc::utils::geom2d::ray<float>& s1, const ShapeWrap& s2)
+	std::optional<ray> CheckReflect(const olc::utils::geom2d::ray& s1, const ShapeWrap& s2)
 	{
 		const auto dispatch = overloads{
-			[&](const auto& a) -> std::optional<olc::utils::geom2d::ray<float>>
+			[&](const auto& a) -> std::optional<olc::utils::geom2d::ray>
 			{
 				return reflect(s1, make_internal(a));
 			}
@@ -374,13 +374,13 @@ public:
 		}
 
 		// Laser beam		
-		ray<float> ray_laser{ {10.0f, 300.0f}, {1.0f, 0.0f} };
+		ray ray_laser{ {10.0f, 300.0f}, {1.0f, 0.0f} };
 		bool ray_stop = false;
 		int nBounces = 100;
 		size_t last_hit_index = -1;
 		
 		
-		ray<float> ray_reflected;
+		ray ray_reflected;
 
 		while (!ray_stop && nBounces > 0)
 		{
